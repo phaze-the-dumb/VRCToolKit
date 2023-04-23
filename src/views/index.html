@@ -1,0 +1,81 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="./main.css">
+    </head>
+    <body>
+        <div class="control-bar">
+            <div class="drag-bar-left">
+                <div class="window-title">
+                    VRC Tool Kit
+                    <span class="window-version">OSC Status: Connecting...</span>
+                </div>
+            </div>
+            <div class="traffic-light-container">
+                <div class="traffic-light-minimise"></div>
+            </div>
+            <!-- <div class="traffic-light-container">
+                <div class="traffic-light-restore-up"></div>
+            </div>
+            <div class="traffic-light-container">
+                <div class="traffic-light-restore-down"></div>
+            </div> -->
+            <div class="traffic-light-container-close">
+                <div class="traffic-light-close"></div>
+            </div>
+        </div>
+
+        <div class="side-menu">
+            <div class="side-menu-world">
+                Very Cool VRC World
+            </div>
+            <div class="acc-info"></div>
+        </div>
+
+        <div class="status-menu">
+            VRChat Not Running.
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-item" onclick="goTo(0);">
+                <div class="item-tooltip">Home</div>
+                <div class="item-icon item-home"></div>
+            </div>
+            <div class="sidebar-item" onclick="goTo(1);">
+                <div class="item-tooltip">Addons</div>
+                <div class="item-icon item-addons"></div>
+            </div>
+            <div class="sidebar-item" onclick="goTo(2);">
+                <div class="item-tooltip">Settings</div>
+                <div class="item-icon item-settings"></div>
+            </div>
+        </div>
+
+        <canvas id="background"></canvas>
+        <div class="main"></div>
+
+        <div class="body-container">
+            <div class="body">
+                <h1 class="title">Home</h1>
+
+            </div>
+            <div class="body">
+                <h1 class="title">Addons<br /><span class="small-link" onclick="reloadRepos();">Reload</span></h1>
+                <div class="apps-container"></div>
+            </div>
+            <div class="body">
+                <h1 class="title">Settings</h1>
+
+                <div class="settings-content">
+                    <div class="install-button" id="osc-logs-open">Open OSC Logs</div><br />
+
+                    <div class="repo-list">Loading...</div>
+
+                    <input class="repo-add" placeholder="Enter Repo URL..." onchange="addRepo(this.value);">
+                    <div class="repo-confirm">Yes</div>
+                </div>
+            </div>
+        </div>
+        
+        <script src="./main.js"></script>
+    </body>
+</html>

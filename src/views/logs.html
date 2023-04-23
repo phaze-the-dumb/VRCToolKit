@@ -1,0 +1,23 @@
+<html>
+    <head>
+        <style>
+            body{
+                background: black;
+                margin: 2px;
+                color: white;
+                font-family: 'Courier New', Courier, monospace;
+            }
+        </style>
+        <script>
+            window.onload = () => {
+                setInterval(() => {
+                    fetch('http://localhost:8085/log.txt').then(data => data.text()).then(data => {
+                        document.body.innerHTML += data;
+                        document.body.scrollBy(0, 10000);
+                    })
+                }, 100);
+            }
+        </script>
+    </head>
+    <body></body>
+</html>
