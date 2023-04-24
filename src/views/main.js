@@ -7,16 +7,10 @@ let bodies = document.querySelectorAll('.body');
 let bg = document.querySelector('#background');
 
 let repos = [ 'https://cdn.phaze.gay/phaze-the-dumb/plugin-repo' ];
-
-fetch('http://127.0.0.1:8085/config.json')
-    .then(data => data.json())
-    .then(data => {
-        repos = data.pluginRepos;
-        renderRepos();
-    })
+let session;
 
 setInterval(() => {
-    fetch('http://127.0.0.1:8085/gamerunning.json').then(data => data.json()).then(data => {
+    fetch('http://127.0.0.1:8085/gamerunning.json', { headers: { 'auth': session } }).then(data => data.json()).then(data => {
         if(data.running){
             statusMenu.style.bottom = '-60px';
 
@@ -114,7 +108,7 @@ let removeRepo = ( url ) => {
     repos = repos.filter(x => x !== url);
     renderRepos();
 
-    fetch('http://127.0.0.1:8085/removeRepo?'+url);
+    fetch('http://127.0.0.1:8085/removeRepo?'+url, { headers: { 'auth': session } });
 
     document.querySelector('.repo-confirm').innerHTML = 'Removed Repo: '+url;
     document.querySelector('.repo-confirm').style.opacity = '1';
@@ -169,7 +163,7 @@ let addRepo = ( url ) => {
         repos.push(url);
         document.querySelector('.repo-add').value = '';
 
-        fetch('http://127.0.0.1:8085/addRepo?'+url);
+        fetch('http://127.0.0.1:8085/addRepo?'+url, { headers: { 'auth': session } });
         renderRepos();
 
         document.querySelector('.repo-confirm').innerHTML = 'Added '+data.name+' by '+data.author;
@@ -200,59 +194,244 @@ let addRepo = ( url ) => {
 }
 
 let reloadRepos = () => {
-    fetch('http://127.0.0.1:8085/reloadRepos').then(data => data.json()).then(data => {
+    fetch('http://127.0.0.1:8085/reloadRepos', { headers: { 'auth': session } }).then(data => data.json()).then(data => {
         console.log(data);
+        
+        fetch('http://127.0.0.1:8085/repodata.json', { headers: { 'auth': session } }).then(pluginData => pluginData.json()).then(pluginData => {
+            let text = '';
 
-        let text = '';
+            for(let i = 0; i < data.length; i++) {
+                let repo = data[i];
+    
+                for(let j = 0; j < repo.plugins.length; j++) {
+                    let plugin = repo.plugins[j];
+                    let pluginInfo = pluginData.find(x => x.name === plugin.name && x.author === plugin.author);
 
-        for(let i = 0; i < data.length; i++) {
-            let repo = data[i];
-
-            for(let j = 0; j < repo.plugins.length; j++) {
-                let plugin = repo.plugins[j];
-
-                text += `<div class="app" id="app-${plugin.name}:${repo.name}">
-                    <div class="app-title">${plugin.name} <span class="app-repo">${repo.name}: ${repo.author}</span></div>
-                    <div class="app-desc">${plugin.description}</div>
-                    <div class="button-row">
-                        <div class="install-button">Install</div>
-                        <div class="settings-button" style="display: none;"><div class="settings-button-hover"></div></div>
-                    </div>
-                </div>`
+                    if(!pluginInfo) {
+                        text += `<div class="app" id="app-${plugin.name}-${repo.name}">
+                            <div class="app-title">${plugin.name} <span class="app-repo">${repo.name}: ${repo.author}</span></div>
+                            <div class="app-desc">${plugin.description}</div>
+                            <div class="button-row">
+                                <div class="install-button">Install</div>
+                                <div class="settings-button" style="display: none;"><div class="settings-button-hover"></div></div>
+                            </div>
+                        </div>`
+                    } else{
+                        if(pluginInfo.enabled){
+                            text += `<div class="app" id="app-${plugin.name}-${repo.name}">
+                                <div class="app-title">${plugin.name} <span class="app-repo">${repo.name}: ${repo.author}</span></div>
+                                <div class="app-desc">${plugin.description}</div>
+                                <div class="button-row">
+                                    <div class="install-button">Disable</div>
+                                    <div class="settings-button"><div class="settings-button-hover"></div></div>
+                                </div>
+                            </div>`
+                        } else{
+                            text += `<div class="app" id="app-${plugin.name}-${repo.name}">
+                                <div class="app-title">${plugin.name} <span class="app-repo">${repo.name}: ${repo.author}</span></div>
+                                <div class="app-desc">${plugin.description}</div>
+                                <div class="button-row">
+                                    <div class="install-button">Enable</div>
+                                    <div class="settings-button" style="display: none;"><div class="settings-button-hover"></div></div>
+                                </div>
+                            </div>`
+                        }
+                    }
+                }
             }
-        }
-
-        document.querySelector('.apps-container').innerHTML = text;
-    })
+    
+            document.querySelector('.apps-container').innerHTML = text;
+    
+            for(let i = 0; i < data.length; i++) {
+                let repo = data[i];
+    
+                for(let j = 0; j < repo.plugins.length; j++) {
+                    let plugin = repo.plugins[j];
+                    let pluginInfo = pluginData.find(x => x.name === plugin.name && x.author === plugin.author);
+    
+                    let installButton = document.querySelector('#app-'+plugin.name+'-'+repo.name).querySelector('.install-button');
+    
+                    if(!pluginInfo) {
+                        installButton.onclick = () => {
+                            installButton.onclick = () => {};
+                            installButton.innerHTML = 'Installing...';
+        
+                            installPlugin(plugin, repo);
+                        }
+                    } else{
+                        if(pluginInfo.enabled){
+                            installButton.onclick = () => {
+                                installButton.onclick = () => {};
+                                installButton.innerHTML = 'Uninstalling...';
+                    
+                                uninstallPlugin(plugin, repo);
+                            }
+                        } else{
+                            installButton.onclick = () => {
+                                installButton.onclick = () => {};
+                                installButton.innerHTML = 'Installing...';
+            
+                                installPlugin(plugin, repo);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
 }
 
 let fetchReposFromCache = () => {
-    fetch('http://127.0.0.1:8085/repos.json').then(data => data.json()).then(data => {
+    fetch('http://127.0.0.1:8085/repos.json', { headers: { 'auth': session } }).then(data => data.json()).then(data => {
         console.log(data);
 
-        let text = '';
+        fetch('http://127.0.0.1:8085/repodata.json', { headers: { 'auth': session } }).then(pluginData => pluginData.json()).then(pluginData => {
+            let text = '';
 
-        for(let i = 0; i < data.length; i++) {
-            let repo = data[i];
+            for(let i = 0; i < data.length; i++) {
+                let repo = data[i];
+    
+                for(let j = 0; j < repo.plugins.length; j++) {
+                    let plugin = repo.plugins[j];
+                    let pluginInfo = pluginData.find(x => x.name === plugin.name && x.author === plugin.author);
 
-            for(let j = 0; j < repo.plugins.length; j++) {
-                let plugin = repo.plugins[j];
-
-                text += `<div class="app" id="app-${plugin.name}:${repo.name}">
-                    <div class="app-title">${plugin.name} <span class="app-repo">${repo.name}: ${repo.author}</span></div>
-                    <div class="app-desc">${plugin.description}</div>
-                    <div class="button-row">
-                        <div class="install-button">Install</div>
-                        <div class="settings-button" style="display: none;"><div class="settings-button-hover"></div></div>
-                    </div>
-                </div>`
+                    if(!pluginInfo) {
+                        text += `<div class="app" id="app-${plugin.name}-${repo.name}">
+                            <div class="app-title">${plugin.name} <span class="app-repo">${repo.name}: ${repo.author}</span></div>
+                            <div class="app-desc">${plugin.description}</div>
+                            <div class="button-row">
+                                <div class="install-button">Install</div>
+                                <div class="settings-button" style="display: none;"><div class="settings-button-hover"></div></div>
+                            </div>
+                        </div>`
+                    } else{
+                        if(pluginInfo.enabled){
+                            text += `<div class="app" id="app-${plugin.name}-${repo.name}">
+                                <div class="app-title">${plugin.name} <span class="app-repo">${repo.name}: ${repo.author}</span></div>
+                                <div class="app-desc">${plugin.description}</div>
+                                <div class="button-row">
+                                    <div class="install-button">Disable</div>
+                                    <div class="settings-button"><div class="settings-button-hover"></div></div>
+                                </div>
+                            </div>`
+                        } else{
+                            text += `<div class="app" id="app-${plugin.name}-${repo.name}">
+                                <div class="app-title">${plugin.name} <span class="app-repo">${repo.name}: ${repo.author}</span></div>
+                                <div class="app-desc">${plugin.description}</div>
+                                <div class="button-row">
+                                    <div class="install-button">Enable</div>
+                                    <div class="settings-button" style="display: none;"><div class="settings-button-hover"></div></div>
+                                </div>
+                            </div>`
+                        }
+                    }
+                }
             }
-        }
-
-        document.querySelector('.apps-container').innerHTML = text;
+    
+            document.querySelector('.apps-container').innerHTML = text;
+    
+            for(let i = 0; i < data.length; i++) {
+                let repo = data[i];
+    
+                for(let j = 0; j < repo.plugins.length; j++) {
+                    let plugin = repo.plugins[j];
+                    let pluginInfo = pluginData.find(x => x.name === plugin.name && x.author === plugin.author);
+    
+                    let installButton = document.querySelector('#app-'+plugin.name+'-'+repo.name).querySelector('.install-button');
+    
+                    if(!pluginInfo) {
+                        installButton.onclick = () => {
+                            installButton.onclick = () => {};
+                            installButton.innerHTML = 'Installing...';
+        
+                            installPlugin(plugin, repo);
+                        }
+                    } else{
+                        if(pluginInfo.enabled){
+                            installButton.onclick = () => {
+                                installButton.onclick = () => {};
+                                installButton.innerHTML = 'Uninstalling...';
+                    
+                                uninstallPlugin(plugin, repo);
+                            }
+                        } else{
+                            installButton.onclick = () => {
+                                installButton.onclick = () => {};
+                                installButton.innerHTML = 'Installing...';
+            
+                                installPlugin(plugin, repo);
+                            }
+                        }
+                    }
+                }
+            }
+        });
     })
 }
 
-goTo(0);
-renderBG();
-fetchReposFromCache();
+let installPlugin = ( plugin, repo ) => {
+    let installButton = document.querySelector('#app-'+plugin.name+'-'+repo.name).querySelector('.install-button');
+    let settingsButton = document.querySelector('#app-'+plugin.name+'-'+repo.name).querySelector('.settings-button');
+
+    fetch('http://127.0.0.1:8085/install/'+repo.name+'/'+plugin.name, { headers: { 'auth': session }}).then(data => data.json()).then(data => {
+        installButton.onclick = () => {
+            installButton.onclick = () => {};
+            installButton.innerHTML = 'Uninstalling...';
+
+            uninstallPlugin(plugin, repo);
+        };
+
+        installButton.innerHTML = 'Disable';
+        settingsButton.style.display = 'flex';
+    }).catch(e => {
+        installButton.onclick = () => {
+            installButton.onclick = () => {};
+            installButton.innerHTML = 'Installing...';
+
+            installPlugin(plugin, repo);
+        }
+
+        installButton.innerHTML = 'Failed. Click to try again.';
+    });
+}
+
+let uninstallPlugin = ( plugin, repo ) => {
+    let installButton = document.querySelector('#app-'+plugin.name+'-'+repo.name).querySelector('.install-button');
+    let settingsButton = document.querySelector('#app-'+plugin.name+'-'+repo.name).querySelector('.settings-button');
+
+    fetch('http://127.0.0.1:8085/uninstall/'+repo.name+'/'+plugin.name, { headers: { 'auth': session }}).then(data => data.json()).then(data => {
+        installButton.onclick = () => {
+            installButton.onclick = () => {};
+            installButton.innerHTML = 'Installing...';
+
+            installPlugin(plugin, repo);
+        };
+
+        installButton.innerHTML = 'Enable';
+        settingsButton.style.display = 'none';
+    }).catch(e => {
+        installButton.onclick = () => {
+            installButton.onclick = () => {};
+            installButton.innerHTML = 'Uninstalling...';
+
+            uninstallPlugin(plugin, repo);
+        }
+
+        installButton.innerHTML = 'Failed. Click to try again.';
+    });
+}
+
+fetch('http://127.0.0.1:8085/session.json').then(data => data.json()).then(data => {
+    session = data.session;
+
+    fetch('http://127.0.0.1:8085/config.json', { headers: { 'auth': session } })
+        .then(data => data.json())
+        .then(data => {
+            repos = data.pluginRepos;
+            renderRepos();
+        })
+
+    goTo(0);
+    renderBG();
+    fetchReposFromCache();
+})

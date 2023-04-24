@@ -2,8 +2,10 @@ const { app, Tray, Menu, nativeImage, ipcMain, BrowserWindow } = require('electr
 const path = require('path');
 const http = require('http');
 const fs = require('fs');
+const os = require('os');
 const crypto = require('crypto');
 const { Server } = require('node-osc');
+const PluginManager = require('./lib/pluginmanager.js');
 const repoAPI = require('./lib/repos.js');
 
 const appdetector = require('./lib/appdetector');
@@ -11,6 +13,7 @@ const logs = require('./lib/vrclogparser');
 
 let config = {
     pluginRepos: [ 'https://cdn.phaze.gay/phaze-the-dumb/plugin-repo/' ],
+    dataPath: path.join(os.homedir(), './AppData/LocalLow/phaze/VRChatToolKit')
 };
 
 if(!fs.existsSync('config.json'))
@@ -31,6 +34,9 @@ if(changes)
 
 config = tmpConfig;
 
+if(!fs.existsSync(config.dataPath))
+    fs.mkdirSync(config.dataPath, { recursive: true });
+
 let s = new Server(9001, '127.0.0.1');
 let oscstatus = { text: 'Connecting.' };
 let lastWorld = null;
@@ -41,6 +47,7 @@ let oscLogsOpen = false;
 let osclogs;
 let repoCache = null;
 let session = null;
+let pluginManager = new PluginManager(config);
 
 appdetector.checkForProcess('VRChat.exe').then(running => gameRunning = running);
 s.on('listening', () => oscstatus.text = 'Connected.');
@@ -107,7 +114,7 @@ app.on('ready', () => {
 })
 
 http.createServer((req, res) => {
-    if(req.url === '/getsession.json' && !session){
+    if(req.url === '/session.json'){
         session = crypto.randomUUID();
         return res.end(JSON.stringify({ session }));
     }
@@ -152,6 +159,9 @@ http.createServer((req, res) => {
         return res.end('ok')
     }
 
+    if(req.url === '/repodata.json')
+        return res.end(JSON.stringify(pluginManager.getLoadedPlugins()));
+
     if(req.url === '/repos.json'){
         if(repoCache)
             return res.end(JSON.stringify(repoCache));
@@ -172,6 +182,40 @@ http.createServer((req, res) => {
         });
 
         return;
+    }
+
+    if(req.url.startsWith('/install/')){
+        let parts = req.url.split('/');
+        parts.shift();
+        parts.shift();
+
+        let repo = repoCache.find(r => r.name === parts[0])
+        if(!repo)return res.end('Cannot find repo');
+
+        let plugin = repo.plugins.find(p => p.name === parts[1]);
+        if(!plugin)return res.end('Cannot find plugin');
+
+        if(!pluginManager.hasPlugin(plugin))
+            pluginManager.downloadPlugin(plugin);
+        else
+            pluginManager.enablePlugin(plugin);
+
+        return res.end("{\"ok\":true}");
+    }
+
+    if(req.url.startsWith('/uninstall/')){
+        let parts = req.url.split('/');
+        parts.shift();
+        parts.shift();
+
+        let repo = repoCache.find(r => r.name === parts[0])
+        if(!repo)return res.end('Cannot find repo');
+
+        let plugin = repo.plugins.find(p => p.name === parts[1]);
+        if(!plugin)return res.end('Cannot find plugin');
+
+        pluginManager.disablePlugin(plugin);
+        return res.end("{\"ok\":true}");
     }
 
     res.end('404 Not Found');

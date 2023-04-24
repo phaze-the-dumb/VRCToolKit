@@ -131,10 +131,10 @@ body{
 .side-menu{
     position: fixed;
     bottom: 0;
-    right: -260px;
+    right: -310px;
     background: rgba(119, 119, 119, 0.2);
-    width: 250px;
-    height: 100px;
+    width: 300px;
+    height: 75px;
     z-index: 50;
     color: white;
     text-align: center;
@@ -144,24 +144,7 @@ body{
     box-shadow: black 0 0 10px;
     background: rgb(8, 107, 146);
     z-index: 100;
-}
-
-.side-menu-image{
-    border-radius: 10px;
-    width: 100%;
-    height: 200px;
-}
-
-.side-menu-world{
-    font-size: 25px;
-    margin: 10px 0;
-}
-
-.side-menu-divider{
-    width: 100%;
-    background: black;
-    height: 5px;
-    margin: 10px 0;
+    padding: 10px 20px;
 }
 
 .status-menu{

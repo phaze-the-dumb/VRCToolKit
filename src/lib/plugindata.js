@@ -6,17 +6,20 @@ class PluginData{
         this.description = null;
         this.author = null;
         this.url = null;
+        this.files = [];
     }
     fromMeta(meta){
         this.name = meta.name;
         this.description = meta.description;
         this.author = meta.author;
+        this.files = meta.requiredFiles;
     }
     toJSON(){
         return {
             name: this.name,
             description: this.description,
-            author: this.author
+            author: this.author,
+            files: this.files
         }
     }
 }
@@ -33,7 +36,7 @@ PluginData.from = ( url ) => {
         fetch(url + 'meta.json').then(data => data.json()).then(data => {
             console.log('Recived plugin data:', url);
             pdata.fromMeta(data);
-            resolve(data);
+            resolve(pdata);
         }).catch(e => {
             console.error(e);
             reject(e);

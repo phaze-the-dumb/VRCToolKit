@@ -18,6 +18,7 @@ class RepoData{
         if(!plugins[i])return cb();
 
         PluginData.from(plugins[i]).then(plugin => {
+            console.log(plugin);
             this.plugins.push(plugin);
             
             if(plugins[i + 1])
@@ -49,8 +50,10 @@ RepoData.from = ( url ) => {
 
         rdata.url = url;
         fetch(url + 'meta.json').then(data => data.json()).then(data => {
-            console.log('Got repo data from:', url);
-            rdata.fromMeta(data, () => resolve(data));
+            rdata.fromMeta(data, () => {
+                console.log('Got repo data from:', url, rdata);
+                resolve(rdata)
+            });
         }).catch(e => {
             console.error(e);
             reject(e);
