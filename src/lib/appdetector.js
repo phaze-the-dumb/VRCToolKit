@@ -19,7 +19,7 @@ let checkForProcess = ( name ) => {
             if(lins.find(x => x === name))
                 resolve(true);
             else
-                resolve(true);
+                resolve(false);
         })
     })
 

@@ -14,6 +14,9 @@ class PluginManager{
         this.reloadInternal();
     }
     reloadInternal(){
+        console.log(this.plugins);
+        this.plugins.forEach(p => p.stop());
+
         console.log('Reloading plugins...');
         this.plugins = [];
 
@@ -21,6 +24,11 @@ class PluginManager{
 
         pluginFolders.forEach(p =>
             this.plugins.push(new Plugin(this.config.dataPath + '/plugins/' + p)));
+
+        this.plugins.forEach(p => {
+            if(p.enabled)
+                p.start();
+        });
 
         console.log('Finished reloading plugins.');
     }
@@ -57,7 +65,6 @@ class PluginManager{
                 fs.writeFileSync(this.config.dataPath + '/plugins/'+plugin.name+'/package.json', JSON.stringify(pkg));
             }
     
-            this.plugins.push(plugin);
             this.reloadInternal();
         }
 
@@ -89,12 +96,10 @@ class PluginManager{
         p.enabled = true;
         pkg.enabled = true;
 
-        console.log(JSON.stringify(pkg));
         fs.writeFileSync(this.config.dataPath + '/plugins/'+plugin.name+'/package.json', JSON.stringify(pkg));
         this.reloadInternal();
     }
     disablePlugin(plugin){
-        console.log(this.plugins, plugin);
         let p = this.plugins.find(p => p.name === plugin.name && p.author === plugin.author);
         if(!p)throw new Error('Plugin ' + plugin.name + ' not found');
 

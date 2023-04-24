@@ -119,6 +119,13 @@ http.createServer((req, res) => {
         return res.end(JSON.stringify({ session }));
     }
 
+    if(req.url === '/log.txt'){
+        res.end(lastLog);
+        lastLog = '';
+
+        return;
+    }
+
     if(req.headers.auth !== session)return res.end('no');
     if(req.url === '/gamerunning.json' && gameRunning)
         return res.end(JSON.stringify({
@@ -130,13 +137,6 @@ http.createServer((req, res) => {
 
     if(req.url === '/gamerunning.json' && !gameRunning)
         return res.end('{"running":false}');
-    
-    if(req.url === '/log.txt'){
-        res.end(lastLog);
-        lastLog = '';
-
-        return;
-    }
 
     if(req.url === '/config.json')
         return res.end(JSON.stringify(config));
