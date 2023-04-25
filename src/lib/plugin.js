@@ -13,11 +13,16 @@ class Plugin{
         this.fork = null;
         this.abortController = null;
     }
+    onMsg(msg){
+        
+    }
     start(){
         if(this.fork || this.abortController)return;
 
         this.abortController = new AbortController();
         this.fork = cp.fork(this.path + '/' + this.main, { signal: this.abortController.signal });
+
+        this.fork.on('message', ( msg ) => this.onMsg(msg));
     }
     stop(){
         if(!this.fork || !this.abortController)return;

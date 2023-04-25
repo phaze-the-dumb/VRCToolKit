@@ -124,6 +124,12 @@ class PluginManager{
 
         return plugins;
     }
+    broadcastToPlugins(message){
+        this.plugins.forEach(p => {
+            if(p.fork)
+                p.fork.send(message);
+        });
+    }
 }
 
 module.exports = PluginManager;
