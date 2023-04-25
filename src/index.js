@@ -42,7 +42,7 @@ let oscstatus = { text: 'Connecting.' };
 let lastWorld = null;
 let username = null;
 let gameRunning = false;
-let lastLog = '';
+let lastLog = 'Starting OSC Server...<br />';
 let oscLogsOpen = false;
 let osclogs;
 let repoCache = null;
@@ -50,7 +50,12 @@ let session = null;
 let pluginManager = new PluginManager(config);
 
 appdetector.checkForProcess('VRChat.exe').then(running => gameRunning = running);
-s.on('listening', () => oscstatus.text = 'Connected.');
+s.on('listening', () => {
+    oscstatus.text = 'Connected.';
+    lastLog += 'OSC Server Listening...<br />';
+
+    console.log('OSC Server Started...');
+});
 
 s.on('message', msg => {
     lastLog += msg[0] + ' (';
