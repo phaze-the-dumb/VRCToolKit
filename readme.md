@@ -4,6 +4,7 @@
 
 Todo:
 - [x] Addon downloading
+- [x] Addon uninstalling
 - [ ] Addon updating
 - [ ] Addon API
 - [ ] Addon Setting Menus
