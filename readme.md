@@ -5,7 +5,7 @@
 Todo:
 - [x] Addon downloading
 - [x] Addon uninstalling
-- [ ] Addon updating
+- [x] Addon updating
 - [ ] Addon API
 - [ ] Addon Setting Menus
 - [ ] VRChat OSC API (Reciving and Sending)
