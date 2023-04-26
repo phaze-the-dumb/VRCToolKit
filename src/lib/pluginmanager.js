@@ -58,6 +58,9 @@ class PluginManager{
             this.reloadInternal();
         });
     }
+    checkForUpdates(){
+        this.plugins.forEach(p => p.checkForUpdates());
+    }
     hasPlugin(plugin){
         let p = this.plugins.find(p => p.name === plugin.name && p.author === plugin.author);
         if(!p)return false;
@@ -94,7 +97,8 @@ class PluginManager{
             this.reloadInternal();
         }
 
-        plugin.files.forEach((f, i) => {
+        let i = 0;
+        plugin.files.forEach(f => {
             console.log('Downloading '+f);
             fetch(plugin.url + f).then(data => data.arrayBuffer()).then(data => {
                 let p = path.join(downloadPath, f);
@@ -108,9 +112,11 @@ class PluginManager{
 
                 fs.writeFileSync(p, Buffer.from(data));
 
-                console.log('Finished downloading: '+f);
+                console.log('Finished downloading: '+f, i + 1 + ' / ' + plugin.files.length);
                 if(i === plugin.files.length - 1)
                     onFinish();
+
+                i++;
             });
         })
     }
