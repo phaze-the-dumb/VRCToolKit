@@ -2,19 +2,31 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 const fs = require('fs');
 const path = require('path');
 const Plugin = require('./plugin.js');
+const repoAPI = require('./repos.js');
 
 class PluginManager{
     constructor(config){
+        this.pluginsCache = [];
         this.config = config;
         this.plugins = [];
 
         if(!fs.existsSync(this.config.dataPath + '/plugins'))
             fs.mkdirSync(this.config.dataPath + '/plugins', { recursive: true });
 
-        this.reloadInternal();
+        repoAPI.fetchRepos(this.config).then(data => {
+            for(let i = 0; i < data.length; i++){
+                let repo = data[i];
+
+                for (let j = 0; j < repo.plugins.length; j++) {
+                    let plugin = repo.plugins[j];
+                    this.pluginsCache.push(plugin);
+                }
+            }
+
+            this.reloadInternal();
+        });
     }
     reloadInternal(){
-        console.log(this.plugins);
         this.plugins.forEach(p => p.stop());
 
         console.log('Reloading plugins...');
@@ -23,7 +35,7 @@ class PluginManager{
         let pluginFolders = fs.readdirSync(this.config.dataPath + '/plugins');
 
         pluginFolders.forEach(p =>
-            this.plugins.push(new Plugin(this.config.dataPath + '/plugins/' + p)));
+            this.plugins.push(new Plugin(this.config.dataPath + '/plugins/' + p, this)));
 
         this.plugins.forEach(p => {
             if(p.enabled)
@@ -31,6 +43,20 @@ class PluginManager{
         });
 
         console.log('Finished reloading plugins.');
+    }
+    fetchPluginCache(){
+        repoAPI.fetchRepos(this.config).then(data => {
+            for(let i = 0; i < data.length; i++){
+                let repo = data[i];
+
+                for (let j = 0; j < repo.plugins.length; j++) {
+                    let plugin = repo.plugins[j];
+                    this.pluginsCache.push(plugin);
+                }
+            }
+
+            this.reloadInternal();
+        });
     }
     hasPlugin(plugin){
         let p = this.plugins.find(p => p.name === plugin.name && p.author === plugin.author);
@@ -82,10 +108,17 @@ class PluginManager{
 
                 fs.writeFileSync(p, Buffer.from(data));
 
+                console.log('Finished downloading: '+f);
                 if(i === plugin.files.length - 1)
                     onFinish();
             });
         })
+    }
+    uninstallPlugin(name){
+        let downloadPath = this.config.dataPath + '/plugins/'+name;
+        fs.rmSync(downloadPath, { recursive: true, force: true });
+
+        this.plugins = this.plugins.filter(x => x.name !== name);
     }
     enablePlugin(plugin){
         let p = this.plugins.find(p => p.name === plugin.name && p.author === plugin.author);

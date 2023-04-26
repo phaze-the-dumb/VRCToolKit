@@ -3,6 +3,12 @@ const RepoData = require('./repodata.js');
 let fetchRepos = ( config ) => {
     console.log('Fetching repositories...');
     return new Promise(r => {
+        if(config.pluginRepos.length === 0){
+            console.log('No repositories to scan.');
+            r([]);
+            return;
+        }
+
         let repoDatas = [];
 
         let getRepo = ( i, cb ) => {

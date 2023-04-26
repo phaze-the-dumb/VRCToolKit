@@ -7,7 +7,8 @@ let bodies = document.querySelectorAll('.body');
 let bg = document.querySelector('#background');
 
 let repos = [ 'https://cdn.phaze.gay/phaze-the-dumb/plugin-repo' ];
-let session;
+let session = null;
+let selectedPlugin = null;
 
 setInterval(() => {
     fetch('http://127.0.0.1:8085/gamerunning.json', { headers: { 'auth': session } }).then(data => data.json()).then(data => {
@@ -21,16 +22,21 @@ setInterval(() => {
 
             if(data.username)
                 accInfo.innerHTML = 'Logged In As: ' + data.username;
+
+            oscStatus.innerHTML = 'OSC Status: ' + data.oscstatus.text;
         } else{
             statusMenu.style.bottom = '0px';
             sideMenu.style.right = '-360px';
+            
+            oscStatus.innerHTML = 'OSC Status: Disconnected.';
         }
-
-        oscStatus.innerHTML = 'OSC Status: ' + data.oscstatus.text;
     })
 }, 1000);
 
 let goTo = ( index ) => {
+    if(index === 1)
+        fetchReposFromCache();
+
     bodies.forEach((b, i) => {
         if(i > index)
             return b.style.top = '-100%';
@@ -266,6 +272,34 @@ let reloadRepos = () => {
                     
                                 uninstallPlugin(plugin, repo);
                             }
+
+                            let settingsButton = document.querySelector('#app-'+plugin.name+'-'+repo.name).querySelector('.settings-button');
+                            settingsButton.onclick = () => {
+                                document.querySelector('.blackout').style.display = 'block';
+                                document.querySelector('.plugin-settings').style.display = 'block';
+                                selectedPlugin = { plugin, repo };
+
+                                setTimeout(() => {
+                                    document.querySelector('.blackout').style.opacity = '1';
+                                    document.querySelector('.plugin-settings').querySelector('h1').innerHTML = pluginInfo.name;
+    
+                                    document.querySelector('.plugin-settings').style.opacity = '1';
+                                    document.querySelector('.plugin-settings').style.transform = 'translate(-50%, -50%)';
+                                }, 10);
+
+                                document.querySelector('.blackout').onclick = () => {
+                                    selectedPlugin = null;
+                                    document.querySelector('.blackout').style.opacity = '0';
+    
+                                    document.querySelector('.plugin-settings').style.opacity = '0';
+                                    document.querySelector('.plugin-settings').style.transform = 'translate(-50%, -50%) translateY(50px)';
+
+                                    setTimeout(() => {
+                                        document.querySelector('.blackout').style.display = 'none';
+                                        document.querySelector('.plugin-settings').style.display = 'none';
+                                    }, 250);
+                                }
+                            };
                         } else{
                             installButton.onclick = () => {
                                 installButton.onclick = () => {};
@@ -354,6 +388,34 @@ let fetchReposFromCache = () => {
                     
                                 uninstallPlugin(plugin, repo);
                             }
+
+                            let settingsButton = document.querySelector('#app-'+plugin.name+'-'+repo.name).querySelector('.settings-button');
+                            settingsButton.onclick = () => {
+                                document.querySelector('.blackout').style.display = 'block';
+                                document.querySelector('.plugin-settings').style.display = 'block';
+                                selectedPlugin = { plugin, repo };
+
+                                setTimeout(() => {
+                                    document.querySelector('.blackout').style.opacity = '1';
+                                    document.querySelector('.plugin-settings').querySelector('h1').innerHTML = pluginInfo.name;
+    
+                                    document.querySelector('.plugin-settings').style.opacity = '1';
+                                    document.querySelector('.plugin-settings').style.transform = 'translate(-50%, -50%)';
+                                }, 10);
+
+                                document.querySelector('.blackout').onclick = () => {
+                                    selectedPlugin = null;
+                                    document.querySelector('.blackout').style.opacity = '0';
+    
+                                    document.querySelector('.plugin-settings').style.opacity = '0';
+                                    document.querySelector('.plugin-settings').style.transform = 'translate(-50%, -50%) translateY(50px)';
+
+                                    setTimeout(() => {
+                                        document.querySelector('.blackout').style.display = 'none';
+                                        document.querySelector('.plugin-settings').style.display = 'none';
+                                    }, 250);
+                                }
+                            };
                         } else{
                             installButton.onclick = () => {
                                 installButton.onclick = () => {};
@@ -383,6 +445,33 @@ let installPlugin = ( plugin, repo ) => {
 
         installButton.innerHTML = 'Disable';
         settingsButton.style.display = 'flex';
+
+        settingsButton.onclick = () => {
+            document.querySelector('.blackout').style.display = 'block';
+            document.querySelector('.plugin-settings').style.display = 'block';
+            selectedPlugin = { plugin, repo };
+
+            setTimeout(() => {
+                document.querySelector('.blackout').style.opacity = '1';
+                document.querySelector('.plugin-settings').querySelector('h1').innerHTML = plugin.name;
+
+                document.querySelector('.plugin-settings').style.opacity = '1';
+                document.querySelector('.plugin-settings').style.transform = 'translate(-50%, -50%)';
+            }, 10);
+
+            document.querySelector('.blackout').onclick = () => {
+                selectedPlugin = null;
+                document.querySelector('.blackout').style.opacity = '0';
+
+                document.querySelector('.plugin-settings').style.opacity = '0';
+                document.querySelector('.plugin-settings').style.transform = 'translate(-50%, -50%) translateY(50px)';
+
+                setTimeout(() => {
+                    document.querySelector('.blackout').style.display = 'none';
+                    document.querySelector('.plugin-settings').style.display = 'none';
+                }, 250);
+            }
+        };
     }).catch(e => {
         installButton.onclick = () => {
             installButton.onclick = () => {};
@@ -419,6 +508,24 @@ let uninstallPlugin = ( plugin, repo ) => {
 
         installButton.innerHTML = 'Failed. Click to try again.';
     });
+}
+
+let uninstallSelectedPlugin = () => {
+    if(!selectedPlugin)return;
+
+    fetch('http://127.0.0.1:8085/remove/'+selectedPlugin.repo.name+'/'+selectedPlugin.plugin.name, { headers: { 'auth': session } }).then(data => data.json()).then(data => {
+        selectedPlugin = null;
+        document.querySelector('.blackout').style.opacity = '0';
+
+        document.querySelector('.plugin-settings').style.opacity = '0';
+        document.querySelector('.plugin-settings').style.transform = 'translate(-50%, -50%) translateY(50px)';
+
+        fetchReposFromCache();
+        setTimeout(() => {
+            document.querySelector('.blackout').style.display = 'none';
+            document.querySelector('.plugin-settings').style.display = 'none';
+        }, 250);
+    })
 }
 
 fetch('http://127.0.0.1:8085/session.json').then(data => data.json()).then(data => {

@@ -152,7 +152,10 @@ http.createServer((req, res) => {
         config.pluginRepos = config.pluginRepos.filter(x => x !== req.url.replace('/removeRepo?', ''));
         fs.writeFileSync('config.json', JSON.stringify(config), 'utf8');
 
-        return res.end('ok')
+        pluginManager.fetchPluginCache();
+        repoAPI.fetchRepos(config).then(data => repoCache = data);
+
+        return res.end('ok');
     }
 
     if(req.url.startsWith('/addRepo?')){
@@ -161,7 +164,10 @@ http.createServer((req, res) => {
         config.pluginRepos.push(req.url.replace('/addRepo?', ''))
         fs.writeFileSync('config.json', JSON.stringify(config), 'utf8');
 
-        return res.end('ok')
+        pluginManager.fetchPluginCache();
+        repoAPI.fetchRepos(config).then(data => repoCache = data);
+
+        return res.end('ok');
     }
 
     if(req.url === '/repodata.json')
@@ -220,6 +226,23 @@ http.createServer((req, res) => {
         if(!plugin)return res.end('Cannot find plugin');
 
         pluginManager.disablePlugin(plugin);
+        return res.end("{\"ok\":true}");
+    }
+
+    if(req.url.startsWith('/remove/')){
+        let parts = req.url.split('/');
+        parts.shift();
+        parts.shift();
+
+        let repo = repoCache.find(r => r.name === parts[0])
+        if(!repo)return res.end('Cannot find repo');
+
+        let plugin = repo.plugins.find(p => p.name === parts[1]);
+        if(!plugin)return res.end('Cannot find plugin');
+
+        if(pluginManager.hasPlugin(plugin))
+            pluginManager.uninstallPlugin(plugin.name);
+            
         return res.end("{\"ok\":true}");
     }
 
