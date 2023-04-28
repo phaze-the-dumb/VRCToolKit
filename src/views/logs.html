@@ -9,11 +9,17 @@
             }
         </style>
         <script>
+            let shit = '';
+
             window.onload = () => {
                 setInterval(() => {
-                    fetch('http://localhost:8085/log.txt').then(data => data.text()).then(data => {
-                        document.body.innerHTML += data;
-                        document.body.scrollBy(0, 10000);
+                    fetch('http://localhost:8085/alllogs.txt').then(data => data.text()).then(data => {
+                        if(shit !== data.split(' ').join('&nbsp;').split('\n').join('<br />')){
+                            shit = data.split(' ').join('&nbsp;').split('\n').join('<br />')
+                            document.body.innerHTML = data.split(' ').join('&nbsp;').split('\n').join('<br />');
+                            
+                            document.body.scrollBy(0, 10000);
+                        }
                     })
                 }, 100);
             }

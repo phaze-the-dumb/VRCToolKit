@@ -21,4 +21,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     document.querySelector('#osc-logs-open').onclick = () => 
         ipcRenderer.send('open-osclogs');
+
+    document.querySelector('#logs-open').onclick = () => 
+        ipcRenderer.send('open-logs');
 })

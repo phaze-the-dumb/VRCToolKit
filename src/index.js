@@ -6,6 +6,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { Server } = require('node-osc');
 const PluginManager = require('./lib/pluginmanager.js');
+const util = require('util');
 const repoAPI = require('./lib/repos.js');
 
 if(require('electron-squirrel-startup'))app.quit();
@@ -45,11 +46,28 @@ let lastWorld = null;
 let username = null;
 let gameRunning = false;
 let lastLog = 'Starting OSC Server...<br />';
+let globalLogs = 'Starting App...\n';
 let oscLogsOpen = false;
 let osclogs;
+let logsOpen = false;
+let logswin;
 let repoCache = null;
 let session = null;
 let pluginManager = new PluginManager(config);
+
+console.olog = console.log;
+console.log = ( ...args ) => {
+    console.olog(...args);
+
+    args.forEach(arg => {
+        if(typeof arg === 'object')
+            globalLogs += util.inspect(arg, true, 100, false) + '\n';
+        else 
+            globalLogs += arg + '\n';
+    })
+
+    globalLogs += '\n';
+}
 
 appdetector.checkForProcess('VRChat.exe').then(running => gameRunning = running);
 s.on('listening', () => {
@@ -96,9 +114,26 @@ app.on('ready', () => {
             height: 550
         })
 
-        osclogs.loadFile(path.join(__dirname, '/views/logs.html'));
+        osclogs.loadFile(path.join(__dirname, '/views/osclogs.html'));
 
         osclogs.on('close', () => 
+            oscLogsOpen = false);
+    });
+
+    ipcMain.on('open-logs', () => {
+        if(logsOpen)return logswin.focus();
+        logsOpen = true;
+
+        logswin = new BrowserWindow({
+            title: 'VRChat ToolKit',
+            icon: __dirname + '/icon.png',
+            width: 700,
+            height: 550
+        })
+
+        logswin.loadFile(path.join(__dirname, '/views/logs.html'));
+
+        logswin.on('close', () => 
             oscLogsOpen = false);
     });
 
@@ -125,6 +160,9 @@ http.createServer((req, res) => {
         session = crypto.randomUUID();
         return res.end(JSON.stringify({ session }));
     }
+
+    if(req.url === '/alllogs.txt')
+        return res.end(globalLogs);
 
     if(req.url === '/log.txt'){
         res.end(lastLog);
