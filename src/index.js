@@ -8,6 +8,8 @@ const { Server } = require('node-osc');
 const PluginManager = require('./lib/pluginmanager.js');
 const repoAPI = require('./lib/repos.js');
 
+if(require('electron-squirrel-startup'))app.quit();
+
 const appdetector = require('./lib/appdetector');
 const logs = require('./lib/vrclogparser');
 
@@ -247,7 +249,10 @@ http.createServer((req, res) => {
     }
 
     res.end('404 Not Found');
-}).listen(8085);
+}).listen(8085).on('error', ( err ) => {
+    app.quit();
+    throw new Error('App already running... Check your tray.');
+});
 
 setInterval(() => {
     appdetector.checkForProcess('VRChat.exe').then(running => gameRunning = running);
